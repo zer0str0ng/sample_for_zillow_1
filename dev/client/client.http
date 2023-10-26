@@ -1,0 +1,225 @@
+### Login User
+### This step is always necessary
+### Normally every endpoint would check:
+### 1.- x-api-key = Should be the same as defined API_KEY in .env
+### 2.- Authorization = This token is returned when auth/login is called successfully
+### 3.- Depending on the endpoint validations on user roles [user_entity.roles] will be done 
+### Note: Authorization error would return 'Invalid Authorization', this is how the FE knows
+### should request user to login again
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+@UserId = '{{login.response.body.$.id}}'
+ 
+### Clients Get All
+curl --location --request GET '{{base_url}}/client' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+
+### Clients Get All with search params
+curl --location --request GET '{{base_url}}/client?param=6440' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+
+### Client Create New
+# @name client
+curl --location --request POST '{{base_url}}/client' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "registerDate": "{{$datetime iso8601}}",
+    "account": "{{$randomInt 0 999999}}",
+    "buildingType": "OTHER",
+    "monitoringFlag": true,
+    "name": "Random Name {{$randomInt 0 9999999}}",
+    "address": "Random Address {{$randomInt 0 9999999}}",
+    "county": "Random County {{$randomInt 0 9999999}}",
+    "zipCode": "{{$randomInt 11111 99999}}",
+    "city": "La Paz, B.C.S.",
+    "location": "24.1102578,-110.3180973",
+    "emails": ["user{{$randomInt 0 9999999}}@fake-email.com"],
+    "telephones": [{
+        "telephone": "612{{$randomInt 1111111 9999999}}",
+        "notes": "Nothing"
+    }],
+    "users": [
+        {
+            "code": "{{$randomInt 1 999999}}",
+            "name": "Random contact name {{$randomInt 0 9999999}}",
+            "keyword": "Random keyword {{$randomInt 0 9999999}}",
+            "telephones": [{
+                    "telephone": "612{{$randomInt 1111111 9999999}}",
+                    "notes": "Nothing about this user"
+            }],
+            "relation": "Random relation {{$randomInt 0 9999999}}",
+            "number": "",
+            "priority": 1,
+            "notes": ""
+        }
+    ],
+    "contacts": [
+        {
+            "name": "Random contact name {{$randomInt 0 9999999}}",
+            "telephones": [{
+                "telephone": "612{{$randomInt 1111111 9999999}}",
+                "notes": "Nothing about this contact"
+            }],
+            "priority": 1,
+            "notes": ""
+        }
+    ],
+    "zones": [
+        {
+            "zone": "Random zone{{$randomInt 0 9999}}",
+            "protectedArea": "Random protected area {{$randomInt 0 9999999}}",
+            "notes": ""
+        }
+    ],
+    "notes": "Nothing to said",
+    "createdUser": {"id":"{{UserId}}"},
+    "updatedUser": {"id":"{{UserId}}"},
+    "monitorConfig": {
+        "remoteControlFlag": true,
+        "status": "NEW",
+        "model": "OTHER",
+        "type": "HYBRID",
+        "customModel": "DAHUA 123", 
+        "cellphoneModuleFlag": false,
+        "electricFenceFlag": true,
+        "te": {{$randomInt 0 9999}},
+        "openCloseFlag": true,
+        "lineRetentionFlag": true,
+        "fireFlag": true,
+        "ts": {{$randomInt 0 9999}},
+        "chimeFlag": true,
+        "repMensFlag": true,
+        "medFlag": true,
+        "transferLoc": "Random transfer loc {{$randomInt 0 9999}}",
+        "brainLoc": "Random brain loc {{$randomInt 0 9999}}",
+        "pTestDays": {{$randomInt 0 9999}},
+        "partition": "{{$randomInt 1 5}}",
+        "openCloseRestrictedFlag": false,
+        "openCloseRestricted": [],
+        "openCloseMandatoryFlag": false,
+        "openCloseMandatory": []
+    },
+    "patrolOrder": null,
+    "cameras": [{
+        "link": "http://localhost:8080",
+        "notes": ""
+    }],
+    "maxNoCommDays": 0
+}'
+@ClientId = '{{client.response.body.$.id}}'
+
+### Client Get One
+curl --location --request GET '{{base_url}}/client/id' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--header 'x-resource-id: {{ClientId}}' \
+
+### Update created Client
+curl --location --request PUT '{{base_url}}/client' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{ClientId}}",
+    "registerDate": "{{$datetime iso8601}}",
+    "account": "{{$randomInt 0 999999}}",
+    "buildingType": "OTHER",
+    "monitoringFlag": false,
+    "name": "Random Name {{$randomInt 0 9999999}}",
+    "address": "Random Address {{$randomInt 0 9999999}}",
+    "county": "Random County {{$randomInt 0 9999999}}",
+    "zipCode": "{{$randomInt 11111 99999}}",
+    "city": "La Paz, B.C.S.",
+    "location": "24.1102578,-110.3180973",
+    "emails": ["user{{$randomInt 0 9999999}}@fake-email.com"],
+    "telephones": [{
+        "telephone": "612{{$randomInt 1111111 9999999}}",
+        "notes": "Nothing"
+    }],
+    "users": [
+        {
+            "code": "{{$randomInt 1 999999}}",
+            "name": "Random contact name {{$randomInt 0 9999999}}",
+            "keyword": "Random keyword {{$randomInt 0 9999999}}",
+            "telephones": [{
+                    "telephone": "612{{$randomInt 1111111 9999999}}",
+                    "notes": "Nothing about this user"
+            }],
+            "relation": "Random relation {{$randomInt 0 9999999}}",
+            "number": "",
+            "priority": 1,
+            "notes": ""
+        }
+    ],
+    "contacts": [
+        {
+            "name": "Random contact name {{$randomInt 0 9999999}}",
+            "telephones": [{
+                "telephone": "612{{$randomInt 1111111 9999999}}",
+                "notes": "Nothing about this contact"
+            }],
+            "priority": 1,
+            "notes": ""
+        }
+    ],
+    "zones": [
+        {
+            "zone": "Random zone{{$randomInt 0 9999}}",
+            "protectedArea": "Random protected area {{$randomInt 0 9999999}}",
+            "notes": ""
+        }
+    ],
+    "notes": "Updated client",
+    "createdUser": {"id":"{{UserId}}"},
+    "updatedUser": {"id":"{{UserId}}"},
+    "monitorConfig": {
+        "remoteControlFlag": true,
+        "model": "OTHER",
+        "status": "NEW",
+        "type": "HYBRID",
+        "customModel": "DAHUA 123", 
+        "cellphoneModuleFlag": false,
+        "electricFenceFlag": true,
+        "te": {{$randomInt 0 9999}},
+        "openCloseFlag": true,
+        "lineRetentionFlag": true,
+        "fireFlag": true,
+        "ts": {{$randomInt 0 9999}},
+        "chimeFlag": true,
+        "repMensFlag": true,
+        "medFlag": true,
+        "transferLoc": "Random transfer loc {{$randomInt 0 9999}}",
+        "brainLoc": "Random brain loc {{$randomInt 0 9999}}",
+        "pTestDays": {{$randomInt 0 9999}},
+        "partition": "{{$randomInt 1 5}}",
+        "openCloseRestrictedFlag": false,
+        "openCloseRestricted": [],
+        "openCloseMandatoryFlag": false,
+        "openCloseMandatory": []
+    },
+    "patrolOrder": null,
+    "cameras": [{
+        "link": "http://localhost:8080",
+        "notes": ""
+    }],
+    "maxNoCommDays": 0
+}'
+
+### Delete created Client
+curl --location --request DELETE '{{base_url}}/client' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-resource-id: {{ClientId}}' \
+--header 'Authorization: Bearer {{BearerToken}}'

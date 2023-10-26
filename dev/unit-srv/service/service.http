@@ -1,0 +1,81 @@
+### Login User
+### This step is always necessary
+### Normally every endpoint would check:
+### 1.- x-api-key = Should be the same as defined API_KEY in .env
+### 2.- Authorization = This token is returned when auth/login is called successfully
+### 3.- Depending on the endpoint validations on user roles [user_entity.roles] will be done 
+### Note: Authorization error would return 'Invalid Authorization', this is how the FE knows
+### should request user to login again
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+
+### Services Get All
+curl --location --request GET '{{base_url}}/service' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+
+### Create new Service Odometer
+# @name newService
+curl --location --request POST '{{base_url}}/service' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "name": "Service {{$randomInt 0 9999999}}",
+    "freqType": "ODOMETER",
+    "params": {
+        "defKilometers": 200000
+    },
+    "priority": 3,
+    "alertActive": true
+}'
+@ServiceId = '{{newService.response.body.$.id}}'
+
+### Create new Service Time
+curl --location --request POST '{{base_url}}/service' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "name": "Service {{$randomInt 0 9999999}}",
+    "freqType": "TIME",
+    "params": {
+        "defDays": 360,
+        "defInitDate": "2020-11-16T19:00:00Z",
+        "custom": [{
+            "unitId": "b273abb5-da7d-449f-8eab-455cfc68258c",
+            "initDate": "2020-11-16T19:00:00Z"
+        }]
+    },
+    "priority": 3,
+    "alertActive": true
+}'
+
+### Update created Service
+curl --location --request PUT '{{base_url}}/service' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{ServiceId}}",
+    "name": "Service {{$randomInt 0 9999999}}",
+    "freqType": "ODOMETER",
+    "params": {
+        "defKilometers": 200000
+    },
+    "priority": 3,
+    "alertActive": true
+}'
+
+### Delete created Service
+curl --location --request DELETE '{{base_url}}/service' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-resource-id: {{ServiceId}}' \
+--header 'Authorization: Bearer {{BearerToken}}'

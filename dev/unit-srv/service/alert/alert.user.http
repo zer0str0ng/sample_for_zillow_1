@@ -1,0 +1,40 @@
+### Login User
+### This step is always necessary
+### Normally every endpoint would check:
+### 1.- x-api-key = Should be the same as defined API_KEY in .env
+### 2.- Authorization = This token is returned when auth/login is called successfully
+### 3.- Depending on the endpoint validations on user roles [user_entity.roles] will be done 
+### Note: Authorization error would return 'Invalid Authorization', this is how the FE knows
+### should request user to login again
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+
+### Users Get All
+# @name users
+curl --location --request GET '{{base_url}}/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+@UserId = '{{users.response.body.$.[1].id}}' \
+@UserName = '{{users.response.body.$.[1].username}}'
+
+### Login as the user
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: {{UserName}}' \
+--header 'password: Asdfg123!' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+
+### Services Alerts Get All
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{UserId}}' \
+--header 'Authorization: Bearer {{BearerToken}}'

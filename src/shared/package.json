@@ -1,0 +1,19 @@
+{
+    "name": "gigabyte-shared",
+    "version": "1.0.27",
+    "description": "Shared types an libraries among gigabyte project",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "repository": "https://github.com/zer0str0ng/gigabyte-shared.git",
+    "author": "zer0str0ng <zerostrong@gmail.com>",
+    "license": "MIT",
+    "scripts": {
+        "build": "tsc"
+    },
+    "devDependencies": {
+        "typescript": "^4.7.4",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-prettier": "^4.0.0",
+        "prettier": "^2.3.2"
+    }
+}

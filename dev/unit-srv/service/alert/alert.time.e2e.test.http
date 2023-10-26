@@ -1,0 +1,219 @@
+### Login as a root user
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+@AdminId = '{{login.response.body.$.id}}'
+
+### 1- User Create New User for testing
+# @name user
+curl --location --request POST '{{base_url}}/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "username": "e2etestalert{{$randomInt 0 9999999}}",
+    "name": "Name {{$randomInt 0 9999999}}",
+    "cellphone": "612{{$randomInt 1000000 9999999}}",
+    "email": "e2etestalert{{$randomInt 0 9999999}}@fake-email.com",
+    "roles": ["UNIT_OPERATOR"],
+    "auth": {
+        "password": "Asdfg123!"
+    }
+}'
+@TestUserId = '{{user.response.body.$.id}}'
+@TestUserName = '{{user.response.body.$.username}}'
+
+### 2- Create a new Test Unit with 1000KM
+# @name unit
+curl --location --request POST '{{base_url}}/unit' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "description": "unit{{$randomInt 0 9999999}}",
+    "odometer": 1000,
+    "plate": "{{$randomInt 0 9999999}}"
+}'
+@TestUnitId = '{{unit.response.body.$.id}}'
+
+### 3- Assign Unit to User
+# @name assignation
+curl --location --request POST '{{base_url}}/admin/unit/assignation' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "user": { "id": "{{TestUserId}}" },
+    "unit": { "id": "{{TestUnitId}}" },
+    "initOdometer": 1000,
+    "assets": []
+}'
+@AssignationId = '{{assignation.response.body.$.id}}'
+
+### 4- User Accepts Assignation
+# @name loginUser
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: {{TestUserName}}' \
+--header 'password: Asdfg123!' \
+@UserBearerToken = '{{loginUser.response.body.$.accessToken}}'
+
+### Confirm Current Assignation for User-Unit
+curl --location --request PUT '{{base_url}}/user/unit/assignation' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--data-raw '{    
+    "id": "{{AssignationId}}",
+    "status": "ASSIGNED",
+    "assets": [{
+        "source":"UnitAssignation",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitAssignation",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### 5- Create a Service with alert (Time) every 10 days for that Unit and register the first service at 1010KM 5 days later
+# @name newService
+curl --location --request POST '{{base_url}}/service' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "name": "Service {{$randomInt 0 9999999}}",
+    "freqType": "TIME",
+    "params": {
+        "defDays": 360,
+        "defInitDate": "2024-02-16T00:00:00.000Z",
+        "custom":[{
+            "unitId": "{{TestUnitId}}",
+            "days": 10,
+            "initDate": "2023-02-16T00:00:00.000Z"
+        }]
+    },
+    "priority": 3,
+    "alertActive": true
+}'
+@ServiceId = '{{newService.response.body.$.id}}'
+
+### 5b- Create new Unit Service
+### YOU NEED TO SET CURRENT_DATE_FOR_TESTING=2023-02-21T00:00:00.000Z and restart service
+curl --location --request POST '{{base_url}}/service/unit' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--data-raw '{
+    "user": {
+        "id": "{{TestUserId}}"
+    },
+    "unit": {
+        "id": "{{TestUnitId}}"
+    },
+    "service": {
+        "id": "{{ServiceId}}"
+    },
+    "date": "2023-02-21T00:00:00.000Z",
+    "odometer": 1010,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973",
+    "assets": [{
+        "source":"UnitService",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitService",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### YOU NEED TO SET CURRENT_DATE_FOR_TESTING=2023-02-24T00:00:00.000Z and restart service
+### Extra: Processing Alerts for the specific User and specific Service
+curl --location --request GET '{{base_url}}/service/alert/admin/trigger/processing' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}'
+--data-raw '{
+    "userId": "{{TestUserId}}",
+    "serviceId": "{{ServiceId}}"
+}'
+
+### 7- Alert should not be triggered
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}'
+
+### YOU NEED TO SET CURRENT_DATE_FOR_TESTING=2023-04-24T00:00:00.000Z and restart service
+### Extra: Processing Alerts for the specific User and specific Service
+curl --location --request GET '{{base_url}}/service/alert/admin/trigger/processing' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}'
+--data-raw '{
+    "userId": "{{TestUserId}}",
+    "serviceId": "{{ServiceId}}"
+}'
+
+### 9- Alert should be there
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}'
+
+### 10- Do the service advance 80KM and create a new service 
+curl --location --request POST '{{base_url}}/service/unit' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--data-raw '{
+    "user": {
+        "id": "{{TestUserId}}"
+    },
+    "unit": {
+        "id": "{{TestUnitId}}"
+    },
+    "service": {
+        "id": "{{ServiceId}}"
+    },
+    "date": "2023-03-18T00:00:00.000Z",
+    "odometer": 1220,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973",
+    "assets": [{
+        "source":"UnitService",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitService",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### 11- Alert should have gone
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}'

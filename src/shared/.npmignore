@@ -1,0 +1,13 @@
+# End of https://www.gitignore.io/api/node,macos,windows,intellij+all,visualstudiocode
+.vscode/
+src/
+test/
+.editorconfig
+.env.example
+.eslintignore
+.eslintrc
+.npmrc
+jest.config.js
+jest.setup.js
+tsconfig.build.json
+tsconfig.json

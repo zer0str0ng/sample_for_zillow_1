@@ -1,0 +1,9 @@
+{
+  "rest-client.environmentVariables": {
+    "$shared": {
+      "apiKey": "7eb09fa2-7cd7-451b-b353-3e799adaf502",
+      "base_url": "http://localhost:3000",
+      "gigabyte_root_password": "gigabyte_root_password"
+    }
+  }
+}

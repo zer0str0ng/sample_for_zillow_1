@@ -1,0 +1,369 @@
+### Login as a root user
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+@AdminId = '{{login.response.body.$.id}}'
+
+### 1- User Create New User for testing
+# @name user
+curl --location --request POST '{{base_url}}/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "username": "e2etestalert{{$randomInt 0 9999999}}",
+    "name": "Name {{$randomInt 0 9999999}}",
+    "cellphone": "612{{$randomInt 1000000 9999999}}",
+    "email": "e2etestalert{{$randomInt 0 9999999}}@fake-email.com",
+    "roles": ["UNIT_OPERATOR"],
+    "auth": {
+        "password": "Asdfg123!"
+    }
+}'
+@TestUserId = '{{user.response.body.$.id}}'
+@TestUserName = '{{user.response.body.$.username}}'
+
+### 2- Create a new Test Unit with 1000KM
+# @name unit
+curl --location --request POST '{{base_url}}/unit' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "description": "unit{{$randomInt 0 9999999}}",
+    "odometer": 1000,
+    "plate": "{{$randomInt 0 9999999}}"
+}'
+@TestUnitId = '{{unit.response.body.$.id}}'
+
+### 3- Assign Unit to User
+# @name assignation
+curl --location --request POST '{{base_url}}/admin/unit/assignation' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "user": { "id": "{{TestUserId}}" },
+    "unit": { "id": "{{TestUnitId}}" },
+    "initOdometer": 1000,
+    "assets": []
+}'
+@AssignationId = '{{assignation.response.body.$.id}}'
+
+### 4- User Accepts Assignation
+# @name loginUser
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: {{TestUserName}}' \
+--header 'password: Asdfg123!' \
+@UserBearerToken = '{{loginUser.response.body.$.accessToken}}'
+
+### Confirm Current Assignation for User-Unit
+curl --location --request PUT '{{base_url}}/user/unit/assignation' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--data-raw '{    
+    "id": "{{AssignationId}}",
+    "status": "ASSIGNED",
+    "assets": [{
+        "source":"UnitAssignation",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitAssignation",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### 5- Create a Service with alert (Odometer) every 100KM for that Unit and register the first service at 1001KM
+# @name newService
+curl --location --request POST '{{base_url}}/service' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "name": "Service {{$randomInt 0 9999999}}",
+    "freqType": "ODOMETER",
+    "params": {
+        "defKilometers": 100,
+        "custom":[{
+            "unitId":"{{TestUnitId}}"
+        }]
+    },
+    "priority": 3,
+    "alertActive": true
+}'
+@ServiceId = '{{newService.response.body.$.id}}'
+
+### 5b- Create new Unit Service
+curl --location --request POST '{{base_url}}/service/unit' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--data-raw '{
+    "user": {
+        "id": "{{TestUserId}}"
+    },
+    "unit": {
+        "id": "{{TestUnitId}}"
+    },
+    "service": {
+        "id": "{{ServiceId}}"
+    },
+    "date": "{{$datetime iso8601}}",
+    "odometer": 1001,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973",
+    "assets": [{
+        "source":"UnitService",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitService",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### 6- Let's fuel and advance 80KM
+curl --location --request POST '{{base_url}}/service/fueling' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--data-raw '{
+    "user": {
+        "id": "{{TestUserId}}"
+    },
+    "unit": {
+        "id": "{{TestUnitId}}"
+    },
+    "date": "{{$datetime iso8601}}",
+    "odometer": 1080,
+    "liters": 30,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973",
+    "assets": [{
+        "source":"UnitFueling",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitFueling",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### 7- Alert should not be triggered
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}'
+
+
+### 8- Let's fuel and advance 80KM
+curl --location --request POST '{{base_url}}/service/fueling' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--data-raw '{
+    "user": {
+        "id": "{{TestUserId}}"
+    },
+    "unit": {
+        "id": "{{TestUnitId}}"
+    },
+    "date": "{{$datetime iso8601}}",
+    "odometer": 1160,
+    "liters": 30,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973",
+    "assets": [{
+        "source":"UnitFueling",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitFueling",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### 9- Alert should be there
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}'
+
+### 10- Do the service advance 80KM and create a new service 
+curl --location --request POST '{{base_url}}/service/unit' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--data-raw '{
+    "user": {
+        "id": "{{TestUserId}}"
+    },
+    "unit": {
+        "id": "{{TestUnitId}}"
+    },
+    "service": {
+        "id": "{{ServiceId}}"
+    },
+    "date": "{{$datetime iso8601}}",
+    "odometer": 1200,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973",
+    "assets": [{
+        "source":"UnitService",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitService",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### 11- Alert should have gone
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}'
+
+### 12- New Fueling service 200 km later
+curl --location --request POST '{{base_url}}/service/fueling' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--data-raw '{
+    "user": {
+        "id": "{{TestUserId}}"
+    },
+    "unit": {
+        "id": "{{TestUnitId}}"
+    },
+    "date": "{{$datetime iso8601}}",
+    "odometer": 1400,
+    "liters": 30,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973",
+    "assets": [{
+        "source":"UnitFueling",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitFueling",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### 13- New alert should be seen
+# @name newAlert
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}'
+@NewAlertId = '{{newAlert.response.body.$.[0].id}}'
+
+### 14- New alert is dismissed by admin
+curl --location --request PUT '{{base_url}}/service/alert/admin/dismiss' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{AdminId}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{NewAlertId}}",
+    "status": "DISMISSED",
+    "dismissForKilometers": 150
+}'
+
+### 15- Alert should not be seen
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}'
+
+### 16- Let's fuel and advance 200KM
+curl --location --request POST '{{base_url}}/service/fueling' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--data-raw '{
+    "user": {
+        "id": "{{TestUserId}}"
+    },
+    "unit": {
+        "id": "{{TestUnitId}}"
+    },
+    "date": "{{$datetime iso8601}}",
+    "odometer": 1600,
+    "liters": 30,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973",
+    "assets": [{
+        "source":"UnitFueling",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitFueling",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+
+### 17- Alert should be seen
+curl --location --request GET '{{base_url}}/service/alert/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}'
+
+### Extra: Processing Alerts for the specific User and specific Service
+curl --location --request GET '{{base_url}}/service/alert/admin/trigger/processing' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}'
+--data-raw '{
+    "userId": "{{TestUserId}}",
+    "serviceId": "{{ServiceId}}"
+}'
+
+### Admin see all open alerts
+curl --location --request GET '{{base_url}}/service/alert/admin' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}'

@@ -1,0 +1,97 @@
+### Login User
+### This step is always necessary
+### Normally every endpoint would check:
+### 1.- x-api-key = Should be the same as defined API_KEY in .env
+### 2.- Authorization = This token is returned when auth/login is called successfully
+### 3.- Depending on the endpoint validations on user roles [user_entity.roles] will be done 
+### Note: Authorization error would return 'Invalid Authorization', this is how the FE knows
+### should request user to login again
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+@UserId = '{{login.response.body.$.id}}'
+ 
+### Event Get All
+curl --location --request GET '{{base_url}}/event' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+
+### Event Get All with search params
+curl --location --request GET '{{base_url}}/event?param=' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+
+### Event Create New
+# @name event
+curl --location --request POST '{{base_url}}/event' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "source": "COM{{$randomInt 1 4}}",
+    "raw": "08/02  11 2654 18 E302 00 000[DC4]",
+    "protocol": "5",
+    "phone": "26151",
+    "msgType": "18",
+    "account": "2654",
+    "eventCode": "R402",
+    "partitionId": "0{{$randomInt 0 3}}",
+    "userId": "00{{$randomInt 0 3}}",
+    "date": "{{$datetime iso8601}}",
+    "status": "CLO",
+    "minutesToFollow": 0,
+    "history": [{
+        "info": "Evento atendido",
+        "user": {
+            "id": "{{UserId}}"
+        }
+    }]
+}'
+@EventId = '{{event.response.body.$.id}}'
+
+### Event Get One
+curl --location --request GET '{{base_url}}/event/id' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--header 'x-resource-id: {{EventId}}' \
+
+### Update event
+curl --location --request PUT '{{base_url}}/event' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{EventId}}",
+    "source": "COM{{$randomInt 1 4}}",
+    "raw": "08/02  11 2654 18 E302 00 000[DC4]",
+    "protocol": "5",
+    "phone": "26151",
+    "msgType": "18",
+    "account": "2654",
+    "eventCode": "R402",
+    "partitionId": "0{{$randomInt 0 3}}",
+    "userId": "00{{$randomInt 0 3}}",
+    "date": "{{$datetime iso8601}}",
+    "status": "CLO",
+    "minutesToFollow": 0,
+    "history": [{
+        "info": "Evento atendido",
+        "user": {
+            "id": "{{UserId}}"
+        }
+    }]
+}'
+   
+### Remove event 
+curl --location --request DELETE '{{base_url}}/event' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-resource-id: {{EventId}}' \
+--header 'Authorization: Bearer {{BearerToken}}'

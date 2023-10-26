@@ -1,0 +1,113 @@
+### Login User
+### This step is always necessary
+### Normally every endpoint would check:
+### 1.- x-api-key = Should be the same as defined API_KEY in .env
+### 2.- Authorization = This token is returned when auth/login is called successfully
+### 3.- Depending on the endpoint validations on user roles [user_entity.roles] will be done 
+### Note: Authorization error would return 'Invalid Authorization', this is how the FE knows
+### should request user to login again
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+@UserId = '{{login.response.body.$.id}}'
+ 
+### Products Get All
+curl --location --request GET '{{base_url}}/tech-srv/product' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+
+### Products Get All with name filter
+curl --location --request GET '{{base_url}}/tech-srv/product?param=5556258' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+
+### Price Lists Get All
+# @name priceList
+curl --location --request GET '{{base_url}}/tech-srv/price-list' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+@PriceListId = '{{priceList.response.body.$.[0].id}}'
+
+### Product Create New
+# @name product
+curl --location --request POST '{{base_url}}/tech-srv/product' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "name": "Product Name {{$randomInt 0 9999999}}",
+    "type": "Service",
+    "prices": [{
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":1
+    },
+    {
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":2
+    },
+    {
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":3
+    }
+    ],
+    "comments": "No comments"
+}'
+@ProductId = '{{product.response.body.$.id}}'
+@PriceId = '{{product.response.body.$.prices.[0].id}}'
+
+### Product Get One
+curl --location --request GET '{{base_url}}/tech-srv/product/id' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--header 'x-resource-id: {{ProductId}}' \
+
+### Update created Product
+curl --location --request PUT '{{base_url}}/tech-srv/product' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{ProductId}}",
+    "name": "Updated product Name {{$randomInt 0 9999999}}",
+    "type": "Service",
+    "prices": [{
+        "id": "{{PriceId}}",
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":4
+    },
+    {
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":5
+    }],
+    "comments": "No comments"
+}'
+
+### Delete created Product
+curl --location --request DELETE '{{base_url}}/tech-srv/product' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-resource-id: {{ProductId}}' \
+--header 'Authorization: Bearer {{BearerToken}}'

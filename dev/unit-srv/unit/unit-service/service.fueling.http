@@ -1,0 +1,125 @@
+### Login User
+### This step is always necessary
+### Normally every endpoint would check:
+### 1.- x-api-key = Should be the same as defined API_KEY in .env
+### 2.- Authorization = This token is returned when auth/login is called successfully
+### 3.- Depending on the endpoint validations on user roles [user_entity.roles] will be done 
+### Note: Authorization error would return 'Invalid Authorization', this is how the FE knows
+### should request user to login again
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+
+### Fueling Services Get All
+curl --location --request GET '{{base_url}}/service/fueling' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+
+### Users Get All
+# @name users
+curl --location --request GET '{{base_url}}/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+@UserId = '{{users.response.body.$.[1].id}}'
+@UserName = '{{users.response.body.$.[1].username}}'
+ 
+### Units Get All
+# @name units
+curl --location --request GET '{{base_url}}/unit' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+@UnitId = '{{units.response.body.$.[0].id}}'
+
+### Login as the user
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: {{UserName}}' \
+--header 'password: Asdfg123!' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+
+### Create new Fueling Service
+# @name newFuelingService
+curl --location --request POST '{{base_url}}/service/fueling' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-user-id: {{UserId}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "user": {
+        "id": "{{UserId}}"
+    },
+    "unit": {
+        "id": "{{UnitId}}"
+    },
+    "date": "{{$datetime iso8601}}",
+    "odometer": 1010,
+    "liters": 30,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973",
+    "assets": [{
+        "source":"UnitFueling",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    }]
+}' \
+@ServiceId = '{{newFuelingService.response.body.$.id}}'
+
+### Get all services as the user
+curl --location --request GET '{{base_url}}/service/fueling/byUser?startDate=2022-11-08T00:00:00.000Z&endDate=2023-12-08T00:00:00.000Z' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--header 'x-user-id: {{UserId}}' \
+
+### Login as admin again to Get One or to Update the already created
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+
+### Fueling Services Get One
+curl --location --request GET '{{base_url}}/service/fueling/id' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--header 'x-resource-id: {{ServiceId}}' \
+
+### Update created Fueling Service
+curl --location --request PUT '{{base_url}}/service/fueling' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{ServiceId}}",
+    "user": {
+        "id": "{{UserId}}"
+    },
+    "unit": {
+        "id": "{{UnitId}}"
+    },
+    "date": "{{$datetime iso8601}}",
+    "odometer": 1201,
+    "liters": 30,
+    "totalAmount": 800.50,
+    "location": "24.1102578,-110.3180973"
+}'
+
+### Delete created fueling service
+curl --location --request DELETE '{{base_url}}/service/fueling' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-resource-id: {{ServiceId}}' \
+--header 'Authorization: Bearer {{BearerToken}}'

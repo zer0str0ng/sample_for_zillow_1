@@ -1,0 +1,127 @@
+### Login as a root user
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+@AdminId = '{{login.response.body.$.id}}'
+
+### 1- User Create New User for testing
+# @name user
+curl --location --request POST '{{base_url}}/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "username": "e2etestassignation{{$randomInt 0 9999999}}",
+    "name": "Name {{$randomInt 0 9999999}}",
+    "cellphone": "612{{$randomInt 1000000 9999999}}",
+    "email": "e2etestassignation{{$randomInt 0 9999999}}@fake-email.com",
+    "roles": ["UNIT_OPERATOR"],
+    "auth": {
+        "password": "Asdfg123!"
+    }
+}'
+@TestUserId = '{{user.response.body.$.id}}'
+@TestUserName = '{{user.response.body.$.username}}'
+
+### 2- Create a new Test Unit with 1000KM
+# @name unit
+curl --location --request POST '{{base_url}}/unit' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "description": "unit{{$randomInt 0 9999999}}",
+    "odometer": 1000,
+    "plate": "{{$randomInt 0 9999999}}"
+}'
+@TestUnitId = '{{unit.response.body.$.id}}'
+
+### 3- Assign Unit to User
+# @name assignation
+curl --location --request POST '{{base_url}}/admin/unit/assignation' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "user": { "id": "{{TestUserId}}" },
+    "unit": { "id": "{{TestUnitId}}" },
+    "initOdometer": 1000,
+    "assets": []
+}'
+@AssignationId = '{{assignation.response.body.$.id}}'
+
+### 4- Login as the user
+# @name loginUser
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: {{TestUserName}}' \
+--header 'password: Asdfg123!' \
+@UserBearerToken = {{loginUser.response.body.$.accessToken}}
+
+### 5- Confirm Current Assignation for User-Unit
+# @name acceptAssignation
+curl --location --request PUT '{{base_url}}/user/unit/assignation' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--header 'x-user-id: {{TestUserId}}' \
+--data-raw '{    
+    "id": "{{AssignationId}}",
+    "status": "ASSIGNED", 
+    "assets": [{
+        "source":"UnitAssignation",
+        "category":"Other",
+        "orgName":"test1.jpg",
+        "status":"Pending"
+    },{
+        "source":"UnitAssignation",
+        "category":"Other",
+        "orgName":"test2.jpg",
+        "status":"Pending"
+    }]
+}'
+@AssetId1 = {{acceptAssignation.response.body.$.assets.[0].id}}
+@AssetId2 = {{acceptAssignation.response.body.$.assets.[1].id}}
+
+### Upload first File
+POST {{base_url}}/asset/upload
+Accept: application/json
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{UserBearerToken}}
+x-api-key: {{apiKey}}
+x-resource-id: {{AssetId1}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test1.jpg"
+Content-Type: image/jpeg
+
+< ./../../mocks/test.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload second File
+POST {{base_url}}/asset/upload
+Accept: application/json
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{UserBearerToken}}
+x-api-key: {{apiKey}}
+x-resource-id: {{AssetId2}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test2.jpg"
+Content-Type: image/jpeg
+
+< ./../../mocks/test.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Get User current Assignation
+# @name current
+curl --location --request GET '{{base_url}}/user/unit/assignation' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{UserBearerToken}}' \
+--header 'x-user-id: {{TestUserId}}' \

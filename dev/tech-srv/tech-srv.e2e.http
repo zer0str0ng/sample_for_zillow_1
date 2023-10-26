@@ -1,0 +1,681 @@
+### Login User
+### This step is always necessary
+### Normally every endpoint would check:
+### 1.- x-api-key = Should be the same as defined API_KEY in .env
+### 2.- Authorization = This token is returned when auth/login is called successfully
+### 3.- Depending on the endpoint validations on user roles [user_entity.roles] will be done 
+### Note: Authorization error would return 'Invalid Authorization', this is how the FE knows
+### should request user to login again
+# @name login
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: root' \
+--header 'password: {{gigabyte_root_password}}' \
+@BearerToken = '{{login.response.body.$.accessToken}}'
+@UserId = '{{login.response.body.$.id}}'
+
+### Tech Service Get All 
+curl --location --request GET '{{base_url}}/tech-srv?startDate=2022-11-08T00:00:00.000Z&endDate=2027-01-08T00:00:00.000Z' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+
+### Step 1: Create technician 
+### Create Technician 
+# @name technician
+curl --location --request POST '{{base_url}}/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "username": "technician{{$randomInt 0 9999999}}",
+    "name": "Random Name {{$randomInt 0 9999999}}",
+    "cellphone": "612{{$randomInt 1000000 9999999}}",
+    "email": "user{{$randomInt 0 9999999}}@fake-email.com",
+    "roles": ["TECHNICIAN"],
+    "auth": {
+        "password": "Asdfg123!"
+    }
+}'
+@TechnicianId = '{{technician.response.body.$.id}}'
+@TechnicianUsername = '{{technician.response.body.$.username}}'
+### Login
+# @name technicianLogin
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: {{TechnicianUsername}}' \
+--header 'password: Asdfg123!' \
+@TechnicianBearerToken = '{{login.response.body.$.accessToken}}'
+@TechnicianUserId = '{{technicianLogin.response.body.$.id}}'
+
+### Step 2: Create financial user
+# @name financialUser
+curl --location --request POST '{{base_url}}/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "username": "financial{{$randomInt 0 9999999}}",
+    "name": "Random Name {{$randomInt 0 9999999}}",
+    "cellphone": "612{{$randomInt 1000000 9999999}}",
+    "email": "user{{$randomInt 0 9999999}}@fake-email.com",
+    "roles": ["DEBT"],
+    "auth": {
+        "password": "Asdfg123!"
+    }
+}'
+@FinancialId = '{{financialUser.response.body.$.id}}'
+@FinancialUsername = '{{financialUser.response.body.$.username}}'
+### Login
+# @name financialLogin
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: {{FinancialUsername}}' \
+--header 'password: Asdfg123!' \
+@FinancialBearerToken = '{{financialLogin.response.body.$.accessToken}}'
+@FinancialUserId = '{{financialLogin.response.body.$.id}}'
+
+### Step 3: Create coordinator user
+# @name coordinatorUser
+curl --location --request POST '{{base_url}}/user' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "username": "coordinator{{$randomInt 0 9999999}}",
+    "name": "Random Name {{$randomInt 0 9999999}}",
+    "cellphone": "612{{$randomInt 1000000 9999999}}",
+    "email": "user{{$randomInt 0 9999999}}@fake-email.com",
+    "roles": ["COORDINATOR"],
+    "auth": {
+        "password": "Asdfg123!"
+    }
+}'
+@CoordinatorId = '{{coordinatorUser.response.body.$.id}}'
+@CoordinatorUsername = '{{coordinatorUser.response.body.$.username}}'
+
+### Login
+# @name coordinatorLogin
+curl --location --request GET '{{base_url}}/user/auth/login' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'username: {{CoordinatorUsername}}' \
+--header 'password: Asdfg123!' \
+@CoordinatorBearerToken = '{{coordinatorLogin.response.body.$.accessToken}}'
+@CoordinatorUserId = '{{coordinatorLogin.response.body.$.id}}'
+
+### Step 4: Create price list
+# @name priceList
+curl --location --request POST '{{base_url}}/tech-srv/price-list' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "name": "Price List Name {{$randomInt 0 9999999}}",
+    "priority": {{$randomInt 1 5}},
+    "comments": "No comments"
+}'
+@PriceListId = '{{priceList.response.body.$.id}}'
+
+### Step 5: Create products 
+### Create product 1
+# @name product1
+curl --location --request POST '{{base_url}}/tech-srv/product' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "name": "Product Name {{$randomInt 0 9999999}}",
+    "type": "Service",
+    "prices": [{
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":1
+    },
+    {
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":2
+    },
+    {
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":3
+    }
+    ],
+    "comments": "No comments"
+}'
+@Product1Id = '{{product1.response.body.$.id}}'
+
+### Create product 2
+# @name product2
+curl --location --request POST '{{base_url}}/tech-srv/product' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "name": "Product Name {{$randomInt 0 9999999}}",
+    "type": "Material",
+    "prices": [{
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":1
+    },
+    {
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":2
+    },
+    {
+        "priceList": {
+            "id": "{{PriceListId}}"
+        },
+        "default": true,
+        "price":3
+    }
+    ],
+    "comments": "No comments"
+}'
+@Product2Id = '{{product2.response.body.$.id}}'
+
+### Step 6: Create new Client
+### Client Create New
+# @name client
+curl --location --request POST '{{base_url}}/client' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "registerDate": "{{$datetime iso8601}}",
+    "account": "{{$randomInt 0 999999}}",
+    "buildingType": "OTHER",
+    "monitoringFlag": true,
+    "name": "Random Name {{$randomInt 0 9999999}}",
+    "address": "Random Address {{$randomInt 0 9999999}}",
+    "county": "Random County {{$randomInt 0 9999999}}",
+    "zipCode": "{{$randomInt 11111 99999}}",
+    "city": "La Paz, B.C.S.",
+    "location": "24.1102578,-110.3180973",
+    "emails": ["user{{$randomInt 0 9999999}}@fake-email.com"],
+    "telephones": [{
+        "telephone": "612{{$randomInt 1111111 9999999}}",
+        "notes": "Nothing"
+    }],
+    "users": [
+        {
+            "code": "{{$randomInt 1 999999}}",
+            "name": "Random contact name {{$randomInt 0 9999999}}",
+            "keyword": "Random keyword {{$randomInt 0 9999999}}",
+            "telephones": [{
+                    "telephone": "612{{$randomInt 1111111 9999999}}",
+                    "notes": "Nothing about this user"
+            }],
+            "relation": "Random relation {{$randomInt 0 9999999}}",
+            "number": "",
+            "priority": 1,
+            "notes": ""
+        }
+    ],
+    "contacts": [
+        {
+            "name": "Random contact name {{$randomInt 0 9999999}}",
+            "telephones": [{
+                "telephone": "612{{$randomInt 1111111 9999999}}",
+                "notes": "Nothing about this contact"
+            }],
+            "priority": 1,
+            "notes": ""
+        }
+    ],
+    "zones": [
+        {
+            "zone": "Random zone{{$randomInt 0 9999}}",
+            "protectedArea": "Random protected area {{$randomInt 0 9999999}}",
+            "notes": ""
+        }
+    ],
+    "notes": "Nothing to said",
+    "createdUser": {"id":"{{UserId}}"},
+    "updatedUser": {"id":"{{UserId}}"},
+    "monitorConfig": {
+        "remoteControlFlag": true,
+        "model": "OTHER",
+        "status": "NEW",
+        "type": "HYBRID",
+        "customModel": "DAHUA 123", 
+        "cellphoneModuleFlag": false,
+        "electricFenceFlag": true,
+        "te": {{$randomInt 0 9999}},
+        "openCloseFlag": true,
+        "lineRetentionFlag": true,
+        "fireFlag": true,
+        "ts": {{$randomInt 0 9999}},
+        "chimeFlag": true,
+        "repMensFlag": true,
+        "medFlag": true,
+        "transferLoc": "Random transfer loc {{$randomInt 0 9999}}",
+        "brainLoc": "Random brain loc {{$randomInt 0 9999}}",
+        "pTestDays": {{$randomInt 0 9999}},
+        "partition": "{{$randomInt 1 5}}",
+        "openCloseRestrictedFlag": false,
+        "openCloseRestricted": [],
+        "openCloseMandatoryFlag": false,
+        "openCloseMandatory": []
+    },
+    "patrolOrder": null,
+    "cameras": [{
+        "link": "http://localhost:8080",
+        "notes": ""
+    }],
+    "maxNoCommDays": 0
+}'
+@ClientId = '{{client.response.body.$.id}}'
+
+### Step 7: Create tech-service 1
+### Tech Service Create New
+# @name techService
+curl --location --request POST '{{base_url}}/tech-srv' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+      "technicianUser": {
+        "id": "{{TechnicianId}}"
+    },
+    "description": "This service is about doing {{$randomInt 0 9999999}} things",
+    "additionalData": "",
+    "serviceDate": "2023-06-02T12:00:00.000Z",
+    "estimatedMinutes": 0,
+    "status": "Created",
+    "priority": "Normal",
+    "client": null,
+    "clientRequired": true,
+    "coordinatorUser": {
+        "id": "{{CoordinatorId}}"
+    },
+    "financialUser": null,
+    "quiz": [],
+    "extraCharge": 10,
+    "extraChargeComment": "Added a little aditament",
+    "totalAmount": 150,
+    "overallRate": 160,
+    "comments": "There are no comments",
+    "location": "24.1102578,-110.3180973",
+    "products": [
+        {
+            "quantity": 1,   
+            "product": {
+                "id": "{{Product1Id}}"
+            },                
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        },
+        {
+            "quantity": 2, 
+            "product": {
+                "id": "{{Product2Id}}"
+            },
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        }
+    ],
+    "assets": []
+}'
+@TechSrvId = '{{techService.response.body.$.id}}'
+
+### Step 8: Click again, it should fail because conflicting service date for the same technician
+
+### Step 9: Technician should finish a tech-service
+### Tech Service Update
+# @name techServiceTechnicianUpdate
+curl --location --request PUT '{{base_url}}/tech-srv' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{TechSrvId}}",
+    "description": "This service is about doing {{$randomInt 0 9999999}} things",
+    "additionalData": "",
+    "technicianUser": {
+        "id": "{{TechnicianId}}"
+    },
+    "serviceDate": "2023-07-19T10:00:00.000Z",
+    "serviceDateEnd": "2023-07-19T11:30:00.000Z",
+    "estimatedMinutes": 90,
+    "status": "CompletedPaid",
+    "priority": "Normal",
+    "client": {
+        "id": "{{ClientId}}"
+    },
+    "clientRequired": true,
+    "coordinatorUser": {
+        "id": "{{CoordinatorId}}"
+    },
+    "financialUser": null,
+    "quiz": [
+        {
+            "category": "Technician",
+            "rate": 5
+        },
+        {
+            "category": "Product",
+            "rate": 5
+        }
+    ],
+    "extraCharge": 10,
+    "extraChargeComment": "Added a little aditament",
+    "totalAmount": 150,
+    "overallRate": 160,
+    "comments": "There are no comments",
+    "location": "24.1102578,-110.3180973",
+    "products": [
+        {
+            "quantity": 1,   
+            "product": {
+                "id": "{{Product1Id}}"
+            },                
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        },
+        {
+            "quantity": 2,   
+            "product": {
+                "id": "{{Product2Id}}"
+            },
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        }
+    ],
+    "assets": [
+        {
+            "source":"TechService",
+            "category":"PostService",
+            "orgName":"test1.jpg",
+            "status":"Pending"
+        },
+        {
+            "source":"TechService",
+            "category":"PostService",
+            "orgName":"test2.jpg",
+            "status":"Pending"
+        }
+    ]
+}'
+@TechSrvAsset1Id = '{{techServiceTechnicianUpdate.response.body.$.assets.[0].id}}'
+@TechSrvAsset2Id = '{{techServiceTechnicianUpdate.response.body.$.assets.[1].id}}'
+
+### Step 10: Coordinator should review service status
+curl --location --request PUT '{{base_url}}/tech-srv' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{TechSrvId}}",
+    "description": "This service is about doing {{$randomInt 0 9999999}} things",
+    "additionalData": "",
+    "technicianUser": {
+        "id": "{{TechnicianId}}"
+    },
+    "serviceDate": "2023-07-19T10:00:00.000Z",
+    "serviceDateEnd": "2023-07-19T11:30:00.000Z",
+    "estimatedMinutes": 90,
+    "status": "Reviewed",
+    "priority": "Normal",
+    "client": {
+        "id": "{{ClientId}}"
+    },
+    "clientRequired": true,
+    "coordinatorUser": {
+        "id": "{{CoordinatorId}}"
+    },
+    "financialUser": null,
+    "quiz": [
+        {
+            "category": "Technician",
+            "rate": 5
+        },
+        {
+            "category": "Product",
+            "rate": 5
+        }
+    ],
+    "extraCharge": 10,
+    "extraChargeComment": "Added a little aditament",
+    "totalAmount": 150,
+    "overallRate": 160,
+    "comments": "There are no comments",
+    "location": "24.1102578,-110.3180973",
+    "products": [
+        {
+            "quantity": 1,  
+            "product": {
+                "id": "{{Product1Id}}"
+            },                
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        },
+        {
+            "quantity": 2,  
+            "product": {
+                "id": "{{Product2Id}}"
+            },
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        }
+    ],
+    "assets": [
+        {
+            "id": "{{TechSrvAsset1Id}}",
+            "source":"TechService",
+            "category":"PostService",
+            "orgName":"test1.jpg",
+            "status":"Pending"
+        },
+        {
+            "id": "{{TechSrvAsset2Id}}",
+            "source":"TechService",
+            "category":"PostService",
+            "orgName":"test2.jpg",
+            "status":"Pending"
+        }
+    ]
+}'
+
+### Step 11: Financial should validate payment
+curl --location --request PUT '{{base_url}}/tech-srv' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{TechSrvId}}",
+    "description": "This service is about doing {{$randomInt 0 9999999}} things",
+    "additionalData": "",
+    "technicianUser": {
+        "id": "{{TechnicianId}}"
+    },
+    "serviceDate": "2023-07-19T10:00:00.000Z",
+    "serviceDateEnd": "2023-07-19T11:30:00.000Z",
+    "estimatedMinutes": 90,
+    "status": "PaymentConfirmation",
+    "priority": "Normal",
+    "client": {
+        "id": "{{ClientId}}"
+    },
+    "clientRequired": true,
+    "coordinatorUser": {
+        "id": "{{CoordinatorId}}"
+    },
+    "financialUser": {
+        "id": "{{FinancialId}}"
+    },
+    "quiz": [
+        {
+            "category": "Technician",
+            "rate": 5
+        },
+        {
+            "category": "Product",
+            "rate": 5
+        }
+    ],
+    "extraCharge": 10,
+    "extraChargeComment": "Added a little aditament",
+    "totalAmount": 150,
+    "overallRate": 160,
+    "comments": "There are no comments",
+    "location": "24.1102578,-110.3180973",
+    "products": [
+        {
+            "quantity": 1,  
+            "product": {
+                "id": "{{Product1Id}}"
+            },                
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        },
+        {
+            "quantity": 2,  
+            "product": {
+                "id": "{{Product2Id}}"
+            },
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        }
+    ],
+    "assets": [
+        {
+            "id": "{{TechSrvAsset1Id}}",
+            "source":"TechService",
+            "category":"PostService",
+            "orgName":"test1.jpg",
+            "status":"Pending"
+        },
+        {
+            "id": "{{TechSrvAsset2Id}}",
+            "source":"TechService",
+            "category":"PostService",
+            "orgName":"test2.jpg",
+            "status":"Pending"
+        }
+    ]
+}'
+
+### Step 12: Coordinator should finish service status
+curl --location --request PUT '{{base_url}}/tech-srv' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'Authorization: Bearer {{BearerToken}}' \
+--data-raw '{
+    "id": "{{TechSrvId}}",
+    "description": "This service is about doing {{$randomInt 0 9999999}} things",
+    "additionalData": "",
+    "technicianUser": {
+        "id": "{{TechnicianId}}"
+    },
+    "serviceDate": "2023-07-19T10:00:00.000Z",
+    "serviceDateEnd": "2023-07-19T11:30:00.000Z",
+    "estimatedMinutes": 90,
+    "status": "Finished",
+    "priority": "Normal",
+    "client": {
+        "id": "{{ClientId}}"
+    },
+    "clientRequired": true,
+    "serviceNumber":"thiswouldbeignoredasitisreadonly",
+    "coordinatorUser": {
+        "id": "{{CoordinatorId}}"
+    },
+    "financialUser": {
+        "id": "{{FinancialId}}"
+    },
+    "quiz": [
+        {
+            "category": "Technician",
+            "rate": 5
+        },
+        {
+            "category": "Product",
+            "rate": 5
+        }
+    ],
+    "extraCharge": 10,
+    "extraChargeComment": "Added a little aditament",
+    "totalAmount": 150,
+    "overallRate": 160,
+    "comments": "There are no comments",
+    "location": "24.1102578,-110.3180973",
+    "products": [
+        {
+            "quantity": 1,  
+            "product": {
+                "id": "{{Product1Id}}"
+            },                
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        },
+        {
+            "quantity": 2,  
+            "product": {
+                "id": "{{Product2Id}}"
+            },
+            "priceList": {
+                "id": "{{PriceListId}}"
+            },
+            "price": 50
+        }
+    ],
+    "assets": [
+        {
+            "id": "{{TechSrvAsset1Id}}",
+            "source":"TechService",
+            "category":"PostService",
+            "orgName":"test1.jpg",
+            "status":"Pending"
+        },
+        {
+            "id": "{{TechSrvAsset2Id}}",
+            "source":"TechService",
+            "category":"PostService",
+            "orgName":"test2.jpg",
+            "status":"Pending"
+        }
+    ]
+}'
+
+### Delete created Tech Service
+curl --location --request DELETE '{{base_url}}/tech-srv' \
+--header 'Content-Type: application/json' \
+--header 'x-api-key: {{apiKey}}' \
+--header 'x-resource-id: {{TechSrvId}}' \
+--header 'Authorization: Bearer {{BearerToken}}'

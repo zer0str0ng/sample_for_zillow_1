@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "rootDir": "./",
+    "baseUrl": "./",
+    "outDir": "./dist",
+    "composite": true,
+    "module": "commonjs",
+    "paths": {
+      "@/*": ["src/*"],
+      "@gigabyte-shared": ["src/*"]
+    },
+    "noImplicitAny": false
+  },
+  "exclude": ["./dist"],
+  "include": ["./index.ts", "./package.json", "./src/**/*"]
+}
